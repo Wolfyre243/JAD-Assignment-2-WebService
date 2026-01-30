@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+  <!-- Prefer classes from the webapp over container (parent-last) to avoid Jackson classloader conflicts -->
+  <Loader delegate="false"/>
+</Context>

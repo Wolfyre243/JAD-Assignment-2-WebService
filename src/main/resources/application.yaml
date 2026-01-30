@@ -1,6 +1,8 @@
 spring:
   application:
     name: silvercare
+  jta:
+    enabled: false
 
 server:
   port: 8081
