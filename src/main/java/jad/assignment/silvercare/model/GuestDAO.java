@@ -4,12 +4,13 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class GuestDAO {
   public static Integer createGuest(String firstName, String lastName, Date dob, String gender, String phone,
       String email) throws SQLException {
     Connection conn = null;
-    int nrow;
+    Integer guestId;
 
     try {
       conn = DBConn.getConnection();
@@ -21,7 +22,7 @@ public class GuestDAO {
           .append("VALUES (?,?,?,?,?,?);")
           .toString();
 
-      final PreparedStatement stmt = conn.prepareStatement(sql);
+      final PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
       stmt.setString(1,firstName);
       stmt.setString(2, lastName);
       stmt.setDate(3, dob);
@@ -29,9 +30,10 @@ public class GuestDAO {
       stmt.setString(5, phone);
       stmt.setString(6, email);
 
-      nrow = stmt.executeUpdate();
+      int nrow = stmt.executeUpdate();
+      guestId = stmt.getGeneratedKeys().next() ? stmt.getGeneratedKeys().getInt(1) : null;
 
-      return nrow;
+      return guestId;
     } catch (Exception e) {
       System.out.print("Guest DB Error:" + e);
       return null;
