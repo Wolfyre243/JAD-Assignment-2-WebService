@@ -95,4 +95,23 @@ public class EventDAO {
 
     return eventBean;
   }
+
+  public static boolean setActive(int eventId, boolean active) throws SQLException {
+    Connection conn = null;
+    try {
+      conn = DBConn.getConnection();
+      final String sql = "UPDATE event SET is_active = ? , updated_at = CURRENT_TIMESTAMP WHERE event_id = ?";
+      final PreparedStatement stmt = conn.prepareStatement(sql);
+      stmt.setBoolean(1, active);
+      stmt.setInt(2, eventId);
+      int updated = stmt.executeUpdate();
+      stmt.close();
+      return updated > 0;
+    } catch (Exception e) {
+      System.out.print("Set Event Active Error:" + e);
+      return false;
+    } finally {
+      if (conn != null) conn.close();
+    }
+  }
 }
