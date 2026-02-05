@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jad.assignment.silvercare.mappings.BookServiceRequestBody;
+import jad.assignment.silvercare.model.Availability;
+import jad.assignment.silvercare.model.AvailabilityDAO;
 import jad.assignment.silvercare.model.BookingDAO;
 import jad.assignment.silvercare.model.GuestDAO;
 import jad.assignment.silvercare.model.Product;
@@ -45,6 +47,19 @@ public class ProductController {
     }
 
     return productBean;
+  }
+
+  // GET /services/{productId}/timeslots
+  @RequestMapping(path = "/{productId}/timeslots", method = RequestMethod.GET)
+  public ArrayList<Availability> getProductTimeslotsById(@PathVariable int productId) {
+    ArrayList<Availability> availabilityArr = new ArrayList<>();
+    try {
+      availabilityArr = AvailabilityDAO.getAvailabilityByProductId(productId);
+    } catch (Exception e) {
+      System.out.print("Get Product By Id Error:" + e);
+    }
+
+    return availabilityArr;
   }
 
   // POST /services/book
