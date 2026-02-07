@@ -77,21 +77,46 @@ public class ProductController {
   // POST /services/book
   @RequestMapping(path = "/book/{productId}", method = RequestMethod.POST)
   public ResponseEntity<Object> bookService(@PathVariable int productId, @RequestBody BookServiceRequestBody request) {
-    int guestId;
+    Integer guestId;
     int bookingId;
     try {
+      // Check product exists
+      Product product = ProductDAO.getProductById(productId);
+      if (product == null) {
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Product not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+      }
+
       String firstName = request.getFirstName();
       String lastName = request.getLastName();
       Date dob = request.getDob();
       String gender = request.getGender();
       String phone = request.getPhone();
       String email = request.getEmail();
+      int caregiverId = request.getCaregiverId();
+      String specialRequests = request.getSpecialRequests();
+      String bookingTimeslot = request.getBookingTimeslot();
+
+      // Validate required fields
+      java.util.List<String> missing = new java.util.ArrayList<>();
+      if (firstName == null || firstName.trim().isEmpty()) missing.add("firstName");
+      if (lastName == null || lastName.trim().isEmpty()) missing.add("lastName");
+      if (dob == null) missing.add("dob");
+      if (bookingTimeslot == null || bookingTimeslot.trim().isEmpty()) missing.add("bookingTimeslot");
+      if (!missing.isEmpty()) {
+        java.util.Map<String, Object> err = new java.util.HashMap<>();
+        err.put("error", "Missing required fields");
+        err.put("missing", missing);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
+      }
 
       // normalize phone: remove non-digits and ensure max 8 characters (DB column is char(8))
       String normalizedPhone = (phone == null) ? "" : phone.replaceAll("\\D", "");
       if (normalizedPhone.length() > 8) {
         normalizedPhone = normalizedPhone.substring(normalizedPhone.length() - 8); // keep last 8 digits
       }
+
       guestId = GuestDAO.createGuest(firstName, lastName, dob, gender, normalizedPhone, email);
       System.out.print("New Guest ID: " + guestId);
 
@@ -101,12 +126,17 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
       }
 
-      int caregiverId = request.getCaregiverId();
-      String specialRequests = request.getSpecialRequests();
-      String bookingTimeslot = request.getBookingTimeslot();
+      // Validate bookingTimeslot format
+      java.sql.Timestamp timeslotTs;
+      try {
+        timeslotTs = Timestamp.valueOf(bookingTimeslot);
+      } catch (IllegalArgumentException iae) {
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Invalid bookingTimeslot format. Required: yyyy-[m]m-[d]d hh:mm:ss");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err);
+      }
 
-      bookingId = BookingDAO.createGuestBooking(guestId, productId, caregiverId, specialRequests,
-          Timestamp.valueOf(bookingTimeslot));
+      bookingId = BookingDAO.createGuestBooking(guestId, productId, caregiverId, specialRequests, timeslotTs);
       System.out.print("New Booking ID: " + bookingId);
 
       java.util.Map<String, Object> resp = new java.util.HashMap<>();
