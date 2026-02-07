@@ -33,33 +33,41 @@ class EventBookingRequestBody {
 public class EventController {
   // GET /services/events
   @RequestMapping(method = RequestMethod.GET)
-  public ArrayList<Event> getAllEvents(@RequestParam(required = false) String search) {
+  public ResponseEntity<Object> getAllEvents(@RequestParam(required = false) String search) {
     ArrayList<Event> eventsArr = new ArrayList<>();
     try {
       eventsArr = EventDAO.getAllEvents(search);
+      return ResponseEntity.ok(eventsArr);
     } catch (Exception e) {
       System.out.print("Get Events Error:" + e);
+      java.util.Map<String, String> err = new java.util.HashMap<>();
+      err.put("error", "Failed to fetch events.");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
     }
-
-    return eventsArr;
   }
 
   // GET /services/events/{eventId}
   @RequestMapping(path = "/{eventId}", method = RequestMethod.GET)
-  public Event getEventById(@PathVariable int eventId) {
-    Event eventBean = null;
+  public ResponseEntity<Object> getEventById(@PathVariable int eventId) {
     try {
-      eventBean = EventDAO.getEventById(eventId);
+      Event eventBean = EventDAO.getEventById(eventId);
+      if (eventBean == null) {
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Event with ID " + eventId + " not found.");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+      }
+      return ResponseEntity.ok(eventBean);
     } catch (Exception e) {
       System.out.print("Get Event By Id Error:" + e);
+      java.util.Map<String, String> err = new java.util.HashMap<>();
+      err.put("error", "Internal server error");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
     }
-
-    return eventBean;
   }
 
   // POST /services/events/book/{eventId}
   @RequestMapping(path = "/book/{eventId}", method = RequestMethod.POST)
-  public ResponseEntity<String> bookEvent(@PathVariable int eventId,
+  public ResponseEntity<Object> bookEvent(@PathVariable int eventId,
       @RequestParam(required = false) Integer clientId,
       @RequestParam(required = false) Integer userId,
       @RequestBody EventBookingRequestBody request) {
@@ -67,13 +75,17 @@ public class EventController {
       // verify event exists
       Event ev = EventDAO.getEventById(eventId);
       if (ev == null) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Event not found");
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Event not found");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
       }
 
       // check capacity
       int current = EventBooking.getBookingCount(eventId);
       if (ev.getCapacity() > 0 && current >= ev.getCapacity()) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body("Event capacity reached");
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Event capacity reached");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(err);
       }
 
       String guestName = request.getGuestName();
@@ -82,18 +94,28 @@ public class EventController {
       // Check duplicate booking
       boolean exists = EventBooking.hasBooking(eventId, clientId, userId, guestEmail);
       if (exists) {
-        return ResponseEntity.status(HttpStatus.CONFLICT).body("Already booked for this event.");
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Already booked for this event.");
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(err);
       }
 
       int bookingId = EventBooking.createBooking(eventId, clientId, userId, guestName, guestEmail);
       if (bookingId <= 0) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to create booking.");
+        java.util.Map<String, String> err = new java.util.HashMap<>();
+        err.put("error", "Failed to create booking.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
       }
 
-      return ResponseEntity.status(HttpStatus.CREATED).body("Event with ID " + eventId + " booked successfully. Booking ID: " + bookingId);
+      java.util.Map<String, Object> resp = new java.util.HashMap<>();
+      resp.put("message", "Event booked successfully");
+      resp.put("eventId", eventId);
+      resp.put("bookingId", bookingId);
+      return ResponseEntity.status(HttpStatus.CREATED).body(resp);
     } catch (Exception e) {
       System.out.print("Book Event Error:" + e);
-      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to book event.");
+      java.util.Map<String, String> err = new java.util.HashMap<>();
+      err.put("error", "Failed to book event.");
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
     }
   }
 }
