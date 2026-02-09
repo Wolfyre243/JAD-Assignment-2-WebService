@@ -1,8 +1,18 @@
 spring:
   application:
     name: silvercare
-  # jta:
-  #   enabled: false
-
+  jta:
+    enabled: false
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: jaylim2708@gmail.com
+    password: awlp dkgz wlqb ccmo
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 server:
   port: 8081

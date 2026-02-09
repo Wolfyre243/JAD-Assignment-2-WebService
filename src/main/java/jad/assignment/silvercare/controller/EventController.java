@@ -11,9 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+
 import jad.assignment.silvercare.model.Event;
 import jad.assignment.silvercare.model.EventBooking;
 import jad.assignment.silvercare.model.EventDAO;
+import jad.assignment.silvercare.service.EmailService;
 
 
 class EventBookingRequestBody {
@@ -31,6 +33,12 @@ class EventBookingRequestBody {
 @RestController
 @RequestMapping("/services/events")
 public class EventController {
+  
+  private final EmailService emailService;
+
+  public EventController(EmailService emailService) {
+    this.emailService = emailService;
+  }
   // GET /services/events
   @RequestMapping(method = RequestMethod.GET)
   public ResponseEntity<Object> getAllEvents(@RequestParam(required = false) String search) {
@@ -106,8 +114,21 @@ public class EventController {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
       }
 
+      try {
+        if (guestEmail != null && !guestEmail.isBlank()) {
+          emailService.sendBookingConfirmation(
+              guestEmail,
+              guestName,
+              eventId,
+              bookingId
+          );
+        }
+      } catch (Exception ex) {
+        System.out.println("Email failed to send: " + ex);
+      }
+
       java.util.Map<String, Object> resp = new java.util.HashMap<>();
-      resp.put("message", "Event booked successfully");
+      resp.put("message", "Event booked successfully. For more details, please check your email.");
       resp.put("eventId", eventId);
       resp.put("bookingId", bookingId);
       return ResponseEntity.status(HttpStatus.CREATED).body(resp);
