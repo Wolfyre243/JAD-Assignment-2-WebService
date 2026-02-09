@@ -11,7 +11,7 @@ public class  BookServiceRequestBody {
 	private String phone;
 	private String email;
   // Booking details
-  private int caregiverId;
+  private String caregiverId;
   private String specialRequests;
   private String bookingTimeslot;
 
@@ -40,7 +40,7 @@ public class  BookServiceRequestBody {
 		return email;
 	}
 
-	public int getCaregiverId() {
+	public String getCaregiverId() {
 		return caregiverId;
 	}
 
